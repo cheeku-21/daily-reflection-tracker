@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Daily Self-Reflection Tracker</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Self-Reflection Tracker</h1>
+        <form method="post">
+            <label for="tasks">Enter tasks (e.g., Write=5):</label>
+            <textarea name="tasks" id="tasks" rows="10" cols="50" required></textarea><br>
+            <input type="submit" value="Submit">
+        </form>
+        <p><a href="/manage">Manage Task Points</a></p>
+        {% if feedback %}
+            <div class="feedback">
+                <h3>Feedback</h3>
+                <p>{{ feedback }}</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

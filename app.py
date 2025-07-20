@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, jsonify, session
+from flask import Flask, request, render_template, redirect, jsonify, session, g
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, timedelta, datetime
 import sqlite3
@@ -8,6 +8,7 @@ from email.mime.text import MIMEText
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # Update database path for production
 db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database', 'tracker.db')
@@ -48,6 +49,14 @@ c.execute("""
     )
 """)
 conn.commit()
+
+# In Python console or add to app.py temporarily:
+from werkzeug.security import generate_password_hash
+c.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
+         ("admin", generate_password_hash("admin123")))
+conn.commit()
+
+#####################************
 
 def get_task_points():
     c.execute("SELECT name, points FROM task_points")
@@ -140,20 +149,46 @@ def check_auth():
         if 'user_id' not in session:
             return redirect('/login')
 
+# Update database connection to handle concurrent requests
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect(db_path)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+@app.teardown_appcontext
+def close_db(error):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+# Add error handler
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error.html'), 500
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         
-        c.execute("SELECT id, password FROM users WHERE username = ?", (username,))
-        user = c.fetchone()
+        db = get_db()
+        user = db.execute(
+            "SELECT * FROM users WHERE username = ?", (username,)
+        ).fetchone()
         
-        if user and check_password_hash(user[1], password):
-            session['user_id'] = user[0]
-            return redirect('/')
+        if user is None:
+            error = 'Invalid username or password'
+        elif not check_password_hash(user['password'], password):
+            error = 'Invalid username or password'
+        else:
+            session.clear()
+            session['user_id'] = user['id']
+            return redirect(url_for('home'))
             
-    return render_template('login.html')
+    return render_template('login.html', error=error)
 
 @app.route('/register-device', methods=['POST'])
 def register_device():
@@ -247,6 +282,5 @@ def stats():
                          improved_days=improved_days[::-1])
 
 if __name__ == '__main__':
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)

@@ -101,6 +101,58 @@ h3 {
     padding: 40px;
 }
 
+header {
+    background: #fff;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.main-nav {
+    margin-top: 1rem;
+}
+
+.main-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.main-nav a {
+    text-decoration: none;
+    color: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.3s;
+}
+
+.main-nav a:hover, .main-nav a.active {
+    background-color: #5cb85c;
+    color: white;
+}
+
+.icon {
+    font-size: 1.2em;
+}
+
+@media (max-width: 600px) {
+    .main-nav ul {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .main-nav a {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 @media (min-width: 768px) {
     .stats-container {
         max-width: 1000px;

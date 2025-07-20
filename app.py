@@ -286,6 +286,10 @@ def stats():
         app.logger.error(f"Error in stats route: {str(e)}")
         return render_template('error.html', message="Could not load statistics"), 500
 
+@app.context_processor
+def inject_year():
+    return {'current_year': datetime.now().year}
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)

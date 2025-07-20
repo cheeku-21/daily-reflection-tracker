@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, jsonify, session, g
+from flask import Flask, request, render_template, redirect, jsonify, session, g, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, timedelta, datetime
 import sqlite3
@@ -257,29 +257,34 @@ def manage():
 
 @app.route('/stats')
 def stats():
-    # Fetch last 30 days of data
-    c.execute("""
-        SELECT date, score, improved 
-        FROM scores 
-        ORDER BY date DESC 
-        LIMIT 30
-    """)
-    rows = c.fetchall()
-    
-    # Format data for charts
-    dates = []
-    scores = []
-    improved_days = []
-    
-    for row in rows:
-        dates.append(row[0])
-        scores.append(float(row[1]))
-        improved_days.append(bool(row[2]))
-    
-    return render_template('stats.html', 
-                         dates=dates[::-1], 
-                         scores=scores[::-1], 
-                         improved_days=improved_days[::-1])
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    try:
+        db = get_db()
+        rows = db.execute("""
+            SELECT date, score, improved 
+            FROM scores 
+            ORDER BY date DESC 
+            LIMIT 30
+        """).fetchall()
+        
+        dates = []
+        scores = []
+        improved_days = []
+        
+        for row in rows:
+            dates.append(row['date'])
+            scores.append(float(row['score']))
+            improved_days.append(bool(row['improved']))
+        
+        return render_template('stats.html', 
+                            dates=dates[::-1], 
+                            scores=scores[::-1], 
+                            improved_days=improved_days[::-1])
+    except Exception as e:
+        app.logger.error(f"Error in stats route: {str(e)}")
+        return render_template('error.html', message="Could not load statistics"), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
